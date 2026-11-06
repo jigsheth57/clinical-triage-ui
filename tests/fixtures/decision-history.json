@@ -1,0 +1,36 @@
+{
+  "fixtureNotice": "SIMULATED TEST FIXTURE ONLY. Not a live clinical review or release receipt.",
+  "id": "simulated-run-integrity",
+  "caseId": "simulated-case",
+  "actor": "clinician",
+  "revision": 3,
+  "input": {"patientId":"P101","diagnosis":"Acute bacterial pharyngitis","proposedTreatment":"Amoxicillin"},
+  "state": "COMPLETED",
+  "stage": "Completed",
+  "snapshotVersion": "synthetic-v1",
+  "createdAt": "2026-11-06T20:00:00Z",
+  "caseVersion": 3,
+  "approved": false,
+  "stale": false,
+  "result": {
+    "readiness": "READY_FOR_CLINICIAN_REVIEW",
+    "originalTreatment": "Amoxicillin",
+    "selectedTreatment": "Doxycycline",
+    "summary": "Doxycycline completed the required demonstration checks. Review the current evidence before attesting.",
+    "nextAction": "Review the selected draft and its current sources, then attest.",
+    "durationMs": 10000,
+    "findings": [],
+    "reviews": [{"agent":"care","revision":3,"summary":"Supplementary test commentary","modelUsage":{"model":"simulated-test-model","durationMs":100,"inputTokens":1,"outputTokens":1}}],
+    "attempts": [
+      {"revision":1,"treatment":"Amoxicillin","disposition":"REJECTED","reason":"Seeded allergy conflict in the original request.","checks":[{"kind":"SAFETY","status":"COMPLETED","outcomeCode":"BLOCKED","evidenceObservationIds":["safety-r1"]}]},
+      {"revision":2,"treatment":"Azithromycin","disposition":"REJECTED","reason":"The candidate was not covered by the synthetic plan.","checks":[{"kind":"SAFETY","status":"COMPLETED","outcomeCode":"CLEAR","evidenceObservationIds":[]},{"kind":"COVERAGE","status":"COMPLETED","outcomeCode":"NOT_COVERED","evidenceObservationIds":["coverage-r2"]}]},
+      {"revision":3,"treatment":"Doxycycline","disposition":"SELECTED","reason":"Fresh checks completed for the selected revision.","checks":[{"kind":"SAFETY","status":"COMPLETED","outcomeCode":"CLEAR","evidenceObservationIds":[]},{"kind":"GUIDANCE","status":"COMPLETED","outcomeCode":"SUPPORTED","evidenceObservationIds":[]},{"kind":"COVERAGE","status":"COMPLETED","outcomeCode":"COVERED","evidenceObservationIds":["coverage-r3"]},{"kind":"FOLLOWUP","status":"COMPLETED","outcomeCode":"AVAILABLE","evidenceObservationIds":[]}]}
+    ],
+    "observations": [
+      {"observationId":"safety-r1","sourceId":"synthetic-safety-v1","sourceVersion":"v1","proposalRevision":1,"treatment":"Amoxicillin","checkKind":"SAFETY","source":{"id":"synthetic-safety-v1","title":"Synthetic allergy rule","version":"v1","section":"Allergy fixture","text":"Seeded penicillin allergy conflict."}},
+      {"observationId":"coverage-r2","sourceId":"synthetic-formulary-v1","sourceVersion":"v1","proposalRevision":2,"treatment":"Azithromycin","checkKind":"COVERAGE","source":{"id":"synthetic-formulary-v1","title":"Synthetic formulary","version":"v1","section":"Coverage fixture","text":"Covered: false. Azithromycin revision 2."}},
+      {"observationId":"coverage-r3","sourceId":"synthetic-formulary-v1","sourceVersion":"v1","proposalRevision":3,"treatment":"Doxycycline","checkKind":"COVERAGE","source":{"id":"synthetic-formulary-v1","title":"Synthetic formulary","version":"v1","section":"Coverage fixture","text":"Covered: true. Doxycycline revision 3."}}
+    ],
+    "evidence": [{"id":"synthetic-formulary-v1","title":"Synthetic formulary","version":"v1","section":"Coverage fixture","text":"Covered: true. Doxycycline revision 3."}]
+  }
+}

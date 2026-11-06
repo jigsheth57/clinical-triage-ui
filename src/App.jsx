@@ -26,6 +26,7 @@ export default function App() {
     [confirmed, setConfirmed] = useState(false);
   const [caseVersion, setCaseVersion] = useState(null),
     [history, setHistory] = useState(null);
+  const [savedView, setSavedView] = useState(false);
   const submission = useRef(null);
   useEffect(() => {
     getSession()
@@ -38,7 +39,13 @@ export default function App() {
       .then(setPatients)
       .catch((e) => setError(e.message));
     request("/api/reviews")
-      .then(setRecent)
+      .then(async (rows) => {
+        const details = await Promise.all(rows.map(async (row) => {
+          try { return { ...row, saved: await request(`/api/reviews/${row.id}`) }; }
+          catch { return row; }
+        }));
+        setRecent(details);
+      })
       .catch((e) => setError(e.message));
   }, [session]);
   useEffect(() => {
@@ -116,6 +123,7 @@ export default function App() {
       };
       const next = await request("/api/reviews", submission.current);
       setEvents([]);
+      setSavedView(false);
       setRun(next);
       setEditing(false);
       setHistory(null);
@@ -132,6 +140,7 @@ export default function App() {
         proposedTreatment: saved.input.proposedTreatment,
       });
       setEvents([]);
+      setSavedView(true);
       setRun(saved);
       setEditing(false);
       setCaseVersion(null);
@@ -206,6 +215,7 @@ export default function App() {
           )}
           {!editing && run && (
             <>
+              <p className="run-context" data-run-id={run.id}>{savedView ? "Saved review · original timings and recorded activity" : "Live review · started in this session"} · {new Date(run.createdAt).toLocaleString()}</p>
               <p className="request-line">
                 {run.input.patientId} · {run.input.diagnosis} · Requested:{" "}
                 {run.input.proposedTreatment}
@@ -213,6 +223,9 @@ export default function App() {
               {isRunning(run) ? (
                 <ReviewProgress
                   run={run}
+                  events={events}
+                  busy={busy}
+                  onRefresh={() => act(async () => setRun(await request(`/api/reviews/${run.id}`)))}
                   connected={connected}
                   onCancel={() =>
                     act(async () =>
@@ -226,6 +239,7 @@ export default function App() {
                 <ReviewResult
                   key={run.id}
                   run={run}
+                  busy={busy}
                   canApprove={session.canApprove}
                   onApprove={() =>
                     act(async () =>
@@ -251,7 +265,7 @@ export default function App() {
                   <summary>Add later information or view case memory</summary>
                   <p>
                     A confirmed new medication changes the case version and
-                    requires a fresh review.
+                    requires a fresh review. Any earlier approval remains a historical decision for the earlier version.
                   </p>
                   <form
                     onSubmit={(e) => {
@@ -290,7 +304,7 @@ export default function App() {
                       />
                       Clinician confirmed this report
                     </label>
-                    <button disabled={busy || !session.canApprove}>
+                    <button disabled={busy || !session.canApprove || !confirmed || !reportedMedicine.trim()}>
                       Save information
                     </button>
                   </form>
@@ -331,7 +345,7 @@ export default function App() {
               {recent.map((r) => (
                 <p key={r.id}>
                   <button className="secondary" onClick={() => resume(r.id)}>
-                    {r.stage} · {new Date(r.created_at).toLocaleString()}
+                    {r.saved ? `${r.saved.input.patientId} · ${r.saved.input.proposedTreatment} · ${r.saved.result?.readiness?.toLowerCase().replaceAll("_", " ") || r.saved.state.toLowerCase()}` : r.stage} · {new Date(r.created_at).toLocaleString()}
                   </button>
                 </p>
               ))}

@@ -205,3 +205,38 @@ footer {
 .field label {
   margin-bottom: 0;
 }
+
+.showcases {
+  border: 1px solid #ddd;
+  margin: 22px 0;
+  padding: 14px 16px;
+  min-width: 0;
+}
+.showcases legend { font-weight: 600; font-size: 14px; padding: 0 6px; }
+.showcases p { margin: 4px 0 12px; font-size: 13px; }
+.showcases button { font-size: 13px; }
+.run-context { font-size: 13px; margin-bottom: 4px; color: #555; }
+.draft-facts { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+dt { color: #666; font-size: 13px; }
+dd { margin: 3px 0 12px; overflow-wrap: anywhere; }
+.draft-facts dd { font-weight: 600; font-size: 18px; }
+.attempts { padding-left: 24px; }
+.attempts > li { padding: 5px 0 20px 8px; border-bottom: 1px solid #ddd; margin-bottom: 18px; overflow-wrap: anywhere; }
+.attempt-title { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: baseline; }
+.status-label { font-size: 12px; color: #555; }
+.check-list { list-style: none; padding: 0; font-size: 13px; }
+.check-list > li { margin: 10px 0; }
+.source-observation { margin: 8px 0 12px; border-left: 2px solid #ccc; padding-left: 12px; }
+.source-observation summary { font-weight: 400; }
+.source-observation p { margin: 8px 0; }
+.next-action { background: #f5f5f5; padding: 4px 16px; margin: 22px 0; }
+.current-evidence, .specialist-assessments { margin: 18px 0; }
+.milestones { padding-left: 22px; font-size: 14px; }
+.milestones li { margin: 10px 0; overflow-wrap: anywhere; }
+.technical-overview h2 { font-size: 17px; margin-bottom: 8px; }
+.technical-overview dl { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 24px; margin-bottom: 0; }
+@media (max-width: 600px) {
+  .draft-facts, .technical-overview dl { grid-template-columns: 1fr; gap: 0; }
+  .showcases { padding: 12px; }
+  .showcases button { width: 100%; }
+}
