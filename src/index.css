@@ -1,1 +1,242 @@
-@import "tailwindcss";
+:root {
+  font-family: Arial, Helvetica, sans-serif;
+  color: #202020;
+  background: #f7f7f7;
+  font-synthesis: none;
+  line-height: 1.5;
+  font-size: 15px;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+}
+main {
+  max-width: 850px;
+  margin: 0 auto;
+  padding: 32px 24px;
+}
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  border-bottom: 1px solid #ccc;
+  padding-bottom: 18px;
+  margin-bottom: 28px;
+  gap: 16px;
+}
+h1 {
+  font-size: 25px;
+  margin: 0;
+  font-weight: 600;
+}
+h2 {
+  font-size: 20px;
+  margin: 0 0 18px;
+  font-weight: 600;
+}
+h3 {
+  font-size: 15px;
+}
+p {
+  margin: 10px 0 16px;
+}
+header p {
+  margin: 3px 0 0;
+  color: #666;
+  font-size: 13px;
+}
+.panel {
+  background: white;
+  border: 1px solid #d2d2d2;
+  padding: 24px;
+  margin: 18px 0;
+}
+label {
+  display: block;
+  margin: 0 0 18px;
+  font-size: 14px;
+  font-weight: 600;
+}
+input,
+select {
+  display: block;
+  width: 100%;
+  padding: 10px;
+  margin-top: 7px;
+  font: inherit;
+  color: inherit;
+  background: white;
+  border: 1px solid #999;
+  border-radius: 2px;
+}
+button {
+  font: inherit;
+  cursor: pointer;
+  border: 1px solid #242424;
+  border-radius: 2px;
+  background: #242424;
+  color: white;
+  padding: 9px 16px;
+  margin: 4px 8px 4px 0;
+}
+button.secondary {
+  background: white;
+  color: #242424;
+  border-color: #aaa;
+}
+button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+input:focus,
+select:focus,
+button:focus-visible,
+summary:focus-visible {
+  outline: 2px solid #555;
+  outline-offset: 3px;
+}
+.muted,
+.eyebrow {
+  color: #646464;
+  font-size: 13px;
+}
+.eyebrow {
+  margin: 0 0 10px;
+}
+.patient-facts {
+  padding: 12px;
+  background: #f5f5f5;
+  font-size: 13px;
+}
+summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+details[open] > summary {
+  margin-bottom: 20px;
+}
+article {
+  border-top: 1px solid #ddd;
+  padding-top: 10px;
+  overflow-wrap: anywhere;
+}
+.check {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-weight: 400;
+}
+.check input {
+  width: auto;
+  margin-top: 5px;
+  flex-shrink: 0;
+}
+.approval {
+  border-top: 1px solid #ccc;
+  padding-top: 18px;
+  margin-top: 20px;
+}
+.finding {
+  border-left: 3px solid #555;
+  padding-left: 12px;
+}
+.error {
+  border: 1px solid #9b3939;
+  padding: 14px;
+  color: #752424;
+  background: white;
+}
+.events {
+  padding-left: 22px;
+}
+.events li {
+  margin: 18px 0;
+  padding-left: 5px;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 12px;
+  overflow-wrap: anywhere;
+}
+code {
+  display: block;
+  font-size: 12px;
+  margin-top: 5px;
+}
+.timing {
+  display: block;
+  font-size: 13px;
+  color: #555;
+}
+.request-line {
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+footer {
+  color: #777;
+  font-size: 12px;
+  margin-top: 28px;
+}
+.login {
+  max-width: 470px;
+}
+@media (max-width: 600px) {
+  main {
+    padding: 20px 14px;
+  }
+  .panel {
+    padding: 18px;
+  }
+  header {
+    display: block;
+  }
+  h1 {
+    font-size: 23px;
+  }
+  input,
+  select {
+    min-width: 0;
+  }
+}
+
+.field {
+  margin-bottom: 18px;
+}
+.field label {
+  margin-bottom: 0;
+}
+
+.showcases {
+  border: 1px solid #ddd;
+  margin: 22px 0;
+  padding: 14px 16px;
+  min-width: 0;
+}
+.showcases legend { font-weight: 600; font-size: 14px; padding: 0 6px; }
+.showcases p { margin: 4px 0 12px; font-size: 13px; }
+.showcases button { font-size: 13px; }
+.run-context { font-size: 13px; margin-bottom: 4px; color: #555; }
+.draft-facts { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+dt { color: #666; font-size: 13px; }
+dd { margin: 3px 0 12px; overflow-wrap: anywhere; }
+.draft-facts dd { font-weight: 600; font-size: 18px; }
+.attempts { padding-left: 24px; }
+.attempts > li { padding: 5px 0 20px 8px; border-bottom: 1px solid #ddd; margin-bottom: 18px; overflow-wrap: anywhere; }
+.attempt-title { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: baseline; }
+.status-label { font-size: 12px; color: #555; }
+.check-list { list-style: none; padding: 0; font-size: 13px; }
+.check-list > li { margin: 10px 0; }
+.source-observation { margin: 8px 0 12px; border-left: 2px solid #ccc; padding-left: 12px; }
+.source-observation summary { font-weight: 400; }
+.source-observation p { margin: 8px 0; }
+.next-action { background: #f5f5f5; padding: 4px 16px; margin: 22px 0; }
+.current-evidence, .specialist-assessments { margin: 18px 0; }
+.milestones { padding-left: 22px; font-size: 14px; }
+.milestones li { margin: 10px 0; overflow-wrap: anywhere; }
+.technical-overview h2 { font-size: 17px; margin-bottom: 8px; }
+.technical-overview dl { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 24px; margin-bottom: 0; }
+@media (max-width: 600px) {
+  .draft-facts, .technical-overview dl { grid-template-columns: 1fr; gap: 0; }
+  .showcases { padding: 12px; }
+  .showcases button { width: 100%; }
+}

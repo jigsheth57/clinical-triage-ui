@@ -1,16 +1,25 @@
-# React + Vite
+# Clinical review browser UI
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+This repository contains the `clinical-triage-ui` module of the coordinated synthetic clinical review demonstration.
 
-Currently, two official plugins are available:
+## Get the complete runnable update
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+Clone the [complete clinical-triage-demo workspace](https://github.com/rsheth8/clinical-triage-demo), which includes all agents, shared contracts, database migrations, fictional data, UI, scripts, tests, numbered UML diagrams and the 23-page presenter guide.
 
-## React Compiler
+```bash
+git clone https://github.com/rsheth8/clinical-triage-demo.git
+cd clinical-triage-demo
+./scripts/setup.sh
+# Start Docker Desktop and Ollama; install the documented local models.
+./scripts/start.sh
+```
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+The combined repository is private; `jigsheth57` is the intended collaborator. Accept the invitation or request access from `rsheth8` before cloning. The [front-page guide](https://github.com/rsheth8/clinical-triage-demo/blob/main/docs/START_HERE.md) and [PDF](https://github.com/rsheth8/clinical-triage-demo/blob/main/output/pdf/Clinical_Review_Presenter_Guide.pdf) explain the update and presentation.
 
-## Expanding the Oxlint configuration
+## Module build contract
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+This module is maintained here for source review/history. **The supported full build runs from the combined workspace root.** Java modules inherit `com.healthcare.demo:clinical-triage-demo:1.0.0` and consume shared `demo-contracts`; do not assume a Java module builds from an isolated clone without installing/providing those matching artifacts. The browser can build independently with `npm ci && npm run build`, but the full scenario requires the backend workspace.
+
+The changes are submitted on a review branch; they do not claim that an unmerged default branch has changed. All records/policies are synthetic. No prescriptions, bookings or patient messages are sent. Tanzu artifacts are prepared; an actual foundation is not verified.
+
+Existing `manifest.yaml` files and the original reference PDF, where present, are historical module artifacts. Use the combined workspace's `deploy/tanzu/` templates and current presenter guide for the supported handoff.
