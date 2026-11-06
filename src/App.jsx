@@ -1,156 +1,348 @@
-import { useState } from 'react'
-import ReactMarkdown from 'react-markdown'
-import { Activity, ShieldAlert, CheckCircle, Loader2, Pill } from 'lucide-react'
+import { useEffect, useRef, useState } from "react";
+import { getSession, request, signIn, isRunning } from "./api";
+import ReviewForm from "./components/ReviewForm";
+import ReviewProgress from "./components/ReviewProgress";
+import ReviewResult from "./components/ReviewResult";
+import StepInspector from "./components/StepInspector";
 
+// Follow this component to understand the screen: sign in, enter a request, watch a run, review it.
 export default function App() {
-  const [formData, setFormData] = useState({
-    patientId: 'P101',
-    diagnosis: 'Acute Bacterial Pharyngitis',
-    proposedPrescription: 'Amoxicillin 500mg TID'
-  })
-  const [loading, setLoading] = useState(false)
-  const [result, setResult] = useState(null)
-  const [error, setError] = useState(null)
-
-  const handleInputChange = (e) => {
-    const { name, value } = e.target
-    setFormData(prev => ({ ...prev, [name]: value }))
-  }
-
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    setLoading(true)
-    setError(null)
-    setResult(null)
-
-    try {
-      const response = await fetch('/api/triage/evaluate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
+  const [session, setSession] = useState(null),
+    [error, setError] = useState("");
+  const [patients, setPatients] = useState([]),
+    [patient, setPatient] = useState(null);
+  const [form, updateForm] = useState({
+    patientId: "P101",
+    diagnosis: "Acute bacterial pharyngitis",
+    proposedTreatment: "Amoxicillin",
+  });
+  const [run, setRun] = useState(null),
+    [events, setEvents] = useState([]),
+    [connected, setConnected] = useState(false);
+  const [editing, setEditing] = useState(true),
+    [busy, setBusy] = useState(false),
+    [recent, setRecent] = useState([]);
+  const [reportedMedicine, setReportedMedicine] = useState(""),
+    [confirmed, setConfirmed] = useState(false);
+  const [caseVersion, setCaseVersion] = useState(null),
+    [history, setHistory] = useState(null);
+  const submission = useRef(null);
+  useEffect(() => {
+    getSession()
+      .then(setSession)
+      .catch((e) => setError(e.message));
+  }, []);
+  useEffect(() => {
+    if (!session?.authenticated) return;
+    request("/api/patients")
+      .then(setPatients)
+      .catch((e) => setError(e.message));
+    request("/api/reviews")
+      .then(setRecent)
+      .catch((e) => setError(e.message));
+  }, [session]);
+  useEffect(() => {
+    if (!session?.authenticated) return;
+    let current = true;
+    request(`/api/patients/${encodeURIComponent(form.patientId)}`)
+      .then((p) => {
+        if (current) setPatient(p);
       })
-
-      if (!response.ok) {
-        throw new Error(`Server responded with status ${response.status}`)
+      .catch((e) => {
+        if (current) setError(e.message);
+      });
+    return () => {
+      current = false;
+    };
+  }, [session, form.patientId]);
+  useEffect(() => {
+    if (!run?.id) return;
+    // EventSource reconnects with Last-Event-ID; persisted event ids prevent duplicate rows.
+    const stream = new EventSource(`/api/reviews/${run.id}/events`);
+    stream.onopen = () => setConnected(true);
+    stream.onerror = () => setConnected(false);
+    stream.addEventListener("activity", (message) => {
+      const event = JSON.parse(message.data);
+      setEvents((previous) =>
+        previous.some((e) => e.id === event.id)
+          ? previous
+          : [...previous, event],
+      );
+    });
+    stream.addEventListener("review", (message) => {
+      const updated = JSON.parse(message.data);
+      setRun(updated);
+      if (!isRunning(updated)) {
+        stream.close();
+        setConnected(false);
       }
-
-      const text = await response.text()
-      setResult(text)
-    } catch (err) {
-      setError(err.message)
+    });
+    return () => {
+      stream.close();
+      setConnected(false);
+    };
+  }, [run?.id]);
+  function setForm(next) {
+    submission.current = null;
+    if (next.patientId !== form.patientId) {
+      setPatient(null);
+      setRun(null);
+      setEvents([]);
+      setHistory(null);
+      setCaseVersion(null);
+    }
+    updateForm(next);
+  }
+  async function act(work) {
+    setBusy(true);
+    setError("");
+    try {
+      await work();
+    } catch (e) {
+      setError(e.message);
     } finally {
-      setLoading(false)
+      setBusy(false);
     }
   }
-
+  async function start(event) {
+    event.preventDefault();
+    await act(async () => {
+      // Keep the same key if a network failure makes the presenter retry the same submission.
+      submission.current ||= {
+        ...form,
+        caseId: run?.caseId || null,
+        expectedVersion: caseVersion ?? run?.caseVersion ?? null,
+        idempotencyKey: crypto.randomUUID(),
+      };
+      const next = await request("/api/reviews", submission.current);
+      setEvents([]);
+      setRun(next);
+      setEditing(false);
+      setHistory(null);
+      setCaseVersion(null);
+      submission.current = null;
+    });
+  }
+  async function resume(id) {
+    await act(async () => {
+      const saved = await request(`/api/reviews/${id}`);
+      updateForm({
+        patientId: saved.input.patientId,
+        diagnosis: saved.input.diagnosis,
+        proposedTreatment: saved.input.proposedTreatment,
+      });
+      setEvents([]);
+      setRun(saved);
+      setEditing(false);
+      setCaseVersion(null);
+      setHistory(null);
+    });
+  }
   return (
-    <div className="min-h-screen bg-slate-50 p-8 font-sans text-slate-900">
-      <div className="max-w-5xl mx-auto space-y-6">
-
-        {/* Header */}
-        <header className="flex items-center space-x-3 pb-4 border-b border-slate-200">
-          <Activity className="w-8 h-8 text-blue-600" />
-          <h1 className="text-2xl font-bold text-slate-800">Clinical Triage & Safety Dashboard</h1>
-        </header>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-
-          {/* Left Column: Input Form */}
-          <div className="md:col-span-1 bg-white p-6 rounded-xl shadow-sm border border-slate-100 h-fit">
-            <h2 className="text-lg font-semibold mb-4 flex items-center">
-              <Pill className="w-5 h-5 mr-2 text-slate-500" />
-              New Prescription
-            </h2>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Patient ID</label>
-                <input
-                  type="text"
-                  name="patientId"
-                  value={formData.patientId}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Diagnosis</label>
-                <input
-                  type="text"
-                  name="diagnosis"
-                  value={formData.diagnosis}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Proposed Prescription</label>
-                <input
-                  type="text"
-                  name="proposedPrescription"
-                  value={formData.proposedPrescription}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                  required
-                />
-              </div>
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md transition-colors flex justify-center items-center"
-              >
-                {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Run Safety Evaluation'}
-              </button>
-            </form>
-          </div>
-
-          {/* Right Column: Multi-Agent Analysis Result */}
-          <div className="md:col-span-2 bg-white p-6 rounded-xl shadow-sm border border-slate-100 min-h-[400px]">
-            <h2 className="text-lg font-semibold mb-4 text-slate-800">Multi-Agent Safety Assessment</h2>
-
-            {loading && (
-              <div className="flex flex-col items-center justify-center h-64 text-slate-500 space-y-4">
-                <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
-                <p className="animate-pulse">Delegating to Pharmacist Agent via A2A...</p>
-                <p className="text-sm opacity-70">Cross-referencing EHR over MCP Protocol...</p>
-              </div>
-            )}
-
-            {error && (
-              <div className="bg-red-50 text-red-700 p-4 rounded-md flex items-start">
-                <ShieldAlert className="w-5 h-5 mr-2 shrink-0 mt-0.5" />
-                <p><strong>Error connecting to Triage Agent:</strong> {error}</p>
-              </div>
-            )}
-
-            {!loading && !error && !result && (
-              <div className="flex flex-col items-center justify-center h-64 text-slate-400">
-                <CheckCircle className="w-12 h-12 mb-3 opacity-20" />
-                <p>Submit a prescription to initiate A2A + MCP clinical evaluation.</p>
-              </div>
-            )}
-
-            {!loading && result && (
-              <div className="prose prose-slate max-w-none">
-                {/* Visual Indicator based on AI output content */}
-                {result.toLowerCase().includes('reject') || result.toLowerCase().includes('contraindication') ? (
-                  <div className="mb-4 bg-red-100 border-l-4 border-red-500 text-red-700 p-4 font-medium flex items-center rounded-r-md">
-                    <ShieldAlert className="w-6 h-6 mr-2" />
-                    Contraindication Flagged by Pharmacist Agent
-                  </div>
-                ) : (
-                  <div className="mb-4 bg-green-100 border-l-4 border-green-500 text-green-800 p-4 font-medium flex items-center rounded-r-md">
-                    <CheckCircle className="w-6 h-6 mr-2" />
-                    Prescription Cleared
-                  </div>
-                )}
-                <ReactMarkdown>{result}</ReactMarkdown>
-              </div>
-            )}
-          </div>
+    <main>
+      <header>
+        <div>
+          <h1>Clinical review</h1>
+          <p>Multi-agent demonstration · synthetic patients only</p>
         </div>
-      </div>
-    </div>
-  )
+        {session?.authenticated && (
+          <span className="muted">{session.username}</span>
+        )}
+      </header>
+      {error && (
+        <p className="error" role="alert">
+          {error}
+        </p>
+      )}
+      {!session ? (
+        <p>Connecting to the demo service…</p>
+      ) : !session.authenticated ? (
+        <form
+          className="panel login"
+          onSubmit={(e) => {
+            e.preventDefault();
+            const data = new FormData(e.currentTarget);
+            act(async () =>
+              setSession(
+                await signIn(data.get("username"), data.get("password")),
+              ),
+            );
+          }}
+        >
+          <h2>Sign in to the local demo</h2>
+          <label>
+            Username
+            <input
+              name="username"
+              defaultValue="clinician"
+              autoComplete="username"
+              required
+            />
+          </label>
+          <label>
+            Password
+            <input
+              name="password"
+              type="password"
+              autoComplete="current-password"
+              required
+            />
+          </label>
+          <button disabled={busy}>Sign in</button>
+          <p className="muted">Use the password from your local .env file.</p>
+        </form>
+      ) : (
+        <>
+          {editing && (
+            <ReviewForm
+              patients={patients}
+              patient={patient}
+              form={form}
+              setForm={setForm}
+              disabled={busy || isRunning(run)}
+              canSubmit={session.canApprove}
+              onSubmit={start}
+            />
+          )}
+          {!editing && run && (
+            <>
+              <p className="request-line">
+                {run.input.patientId} · {run.input.diagnosis} · Requested:{" "}
+                {run.input.proposedTreatment}
+              </p>
+              {isRunning(run) ? (
+                <ReviewProgress
+                  run={run}
+                  connected={connected}
+                  onCancel={() =>
+                    act(async () =>
+                      setRun(
+                        await request(`/api/reviews/${run.id}/cancel`, {}),
+                      ),
+                    )
+                  }
+                />
+              ) : (
+                <ReviewResult
+                  key={run.id}
+                  run={run}
+                  canApprove={session.canApprove}
+                  onApprove={() =>
+                    act(async () =>
+                      setRun(
+                        await request(`/api/reviews/${run.id}/approvals`, {
+                          caseVersion: run.caseVersion,
+                          proposalRevision: run.revision,
+                          snapshotVersion: run.snapshotVersion,
+                          attested: true,
+                        }),
+                      ),
+                    )
+                  }
+                  onEdit={() => {
+                    setEditing(true);
+                    submission.current = null;
+                  }}
+                />
+              )}
+              <StepInspector run={run} events={events} />
+              {!isRunning(run) && (
+                <details className="panel">
+                  <summary>Add later information or view case memory</summary>
+                  <p>
+                    A confirmed new medication changes the case version and
+                    requires a fresh review.
+                  </p>
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      act(async () => {
+                        const h = await request(
+                          `/api/cases/${run.caseId}/changes`,
+                          {
+                            expectedVersion: caseVersion ?? run.caseVersion,
+                            medication: reportedMedicine,
+                            confirmed,
+                          },
+                        );
+                        setHistory(h);
+                        setCaseVersion(h.version);
+                        setRun(await request(`/api/reviews/${run.id}`));
+                        setReportedMedicine("");
+                        setConfirmed(false);
+                      });
+                    }}
+                  >
+                    <label>
+                      Patient-reported medicine
+                      <input
+                        value={reportedMedicine}
+                        maxLength={200}
+                        required
+                        onChange={(e) => setReportedMedicine(e.target.value)}
+                      />
+                    </label>
+                    <label className="check">
+                      <input
+                        type="checkbox"
+                        checked={confirmed}
+                        onChange={(e) => setConfirmed(e.target.checked)}
+                      />
+                      Clinician confirmed this report
+                    </label>
+                    <button disabled={busy || !session.canApprove}>
+                      Save information
+                    </button>
+                  </form>
+                  <button
+                    className="secondary"
+                    onClick={() =>
+                      act(async () =>
+                        setHistory(await request(`/api/cases/${run.caseId}`)),
+                      )
+                    }
+                  >
+                    View case memory
+                  </button>
+                  {history && (
+                    <>
+                      <p>
+                        Case version {history.version} · {history.preference}
+                      </p>
+                      {history.memory.map((m, i) => (
+                        <p key={i}>
+                          {m.kind}: {m.value} ·{" "}
+                          {m.confirmed ? "confirmed" : "unconfirmed"} ·{" "}
+                          {m.source}
+                        </p>
+                      ))}
+                    </>
+                  )}
+                </details>
+              )}
+            </>
+          )}
+          {editing && recent.length > 0 && (
+            <details className="panel">
+              <summary>Open a saved review</summary>
+              <p className="muted">
+                Saved results retain their original inputs and timings.
+              </p>
+              {recent.map((r) => (
+                <p key={r.id}>
+                  <button className="secondary" onClick={() => resume(r.id)}>
+                    {r.stage} · {new Date(r.created_at).toLocaleString()}
+                  </button>
+                </p>
+              ))}
+            </details>
+          )}
+        </>
+      )}
+      <footer>
+        Demonstration software. No real clinical care. Review all evidence and
+        limitations.
+      </footer>
+    </main>
+  );
 }
