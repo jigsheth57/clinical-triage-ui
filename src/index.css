@@ -198,3 +198,10 @@ footer {
     min-width: 0;
   }
 }
+
+.field {
+  margin-bottom: 18px;
+}
+.field label {
+  margin-bottom: 0;
+}

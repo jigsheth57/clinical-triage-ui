@@ -10,9 +10,10 @@ export default function ReviewForm({
   return (
     <form onSubmit={onSubmit} className="panel">
       <h2>1. Review request</h2>
-      <label>
-        Patient
+      <div className="field">
+        <label htmlFor="patient">Patient</label>
         <select
+          id="patient"
           value={form.patientId}
           disabled={disabled}
           onChange={(e) => setForm({ ...form, patientId: e.target.value })}
@@ -23,7 +24,7 @@ export default function ReviewForm({
             </option>
           ))}
         </select>
-      </label>
+      </div>
       {patient && (
         <p className="patient-facts">
           Allergies:{" "}
